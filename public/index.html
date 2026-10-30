@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>WebTerm</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/vendor/xterm.css">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header class="appbar">
+    <div class="appbar-left">
+      <button class="appbar-btn" id="btn-sidebar" title="Ẩn/hiện thanh bên" aria-label="Ẩn/hiện thanh bên"><i data-icon="sidebar"></i></button>
+      <div class="brand"><span class="brand-logo"><i data-icon="logo"></i></span><span class="brand-name">WebTerm</span><span class="brand-badge" id="portable-badge" hidden>USB</span></div>
+    </div>
+
+    <nav class="ribbon" aria-label="Công cụ chính">
+      <button class="rb" id="btn-new-session" title="Tạo session mới (SSH, RDP, terminal local)"><i data-icon="server-plus"></i><span>Session</span></button>
+      <button class="rb needs-local" id="btn-local" title="Mở terminal trên chính máy này"><i data-icon="terminal"></i><span>Terminal</span></button>
+      <span class="rb-sep" aria-hidden="true"></span>
+      <button class="rb" id="btn-layout" title="Chia màn hình"><i data-icon="split"></i><span>Chia</span></button>
+      <button class="rb toggle" id="btn-multiexec" aria-pressed="false" title="Gõ một lần, chạy trên mọi tab được chọn"><i data-icon="broadcast"></i><span>MultiExec</span></button>
+      <button class="rb" id="btn-tunnels" title="Quản lý SSH tunnel"><i data-icon="tunnel"></i><span>Tunnel</span><b class="rb-badge" id="tunnel-badge" hidden></b></button>
+      <button class="rb" id="btn-tools" title="Tạo SSH key, sao lưu, import MobaXterm"><i data-icon="tools"></i><span>Công cụ</span></button>
+    </nav>
+
+    <form id="quick-connect" class="quick" autocomplete="off">
+      <i data-icon="zap" class="quick-icon"></i>
+      <input id="quick-input" placeholder="Kết nối nhanh: user@host:port" spellcheck="false" aria-label="Kết nối nhanh">
+      <button class="quick-go" type="submit" title="Kết nối" aria-label="Kết nối"><i data-icon="arrow-right"></i></button>
+    </form>
+
+    <div class="appbar-right">
+      <button class="appbar-btn" id="btn-commands" title="Truy cập nhanh (Ctrl+K)" aria-label="Truy cập nhanh (Ctrl+K)"><i data-icon="search"></i></button>
+      <button class="appbar-btn" id="btn-vault" title="Master password" aria-label="Master password" hidden><i data-icon="unlock"></i></button>
+      <button class="appbar-btn" id="btn-theme" title="Đổi giao diện sáng/tối" aria-label="Đổi giao diện sáng/tối"><i data-icon="moon"></i></button>
+      <button class="appbar-btn" id="btn-settings" title="Cài đặt" aria-label="Cài đặt"><i data-icon="settings"></i></button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="rail side-tabs" role="tablist" aria-label="Thanh bên">
+      <button role="tab" data-side="sessions" class="rail-btn active" title="Sessions"><i data-icon="server"></i><span>Sessions</span></button>
+      <button role="tab" data-side="sftp" class="rail-btn" title="SFTP"><i data-icon="folder"></i><span>SFTP</span></button>
+      <button role="tab" data-side="macros" class="rail-btn" title="Macros"><i data-icon="zap"></i><span>Macros</span></button>
+    </nav>
+
+    <aside class="sidebar" id="sidebar">
+      <section class="side-panel" id="side-sessions">
+        <div class="panel-head">
+          <h2>Sessions</h2>
+          <div class="panel-actions">
+            <button class="icon-btn" id="side-new-session" title="Session mới" aria-label="Session mới"><i data-icon="plus"></i></button>
+            <button class="icon-btn" id="side-import" title="Import từ MobaXterm" aria-label="Import từ MobaXterm"><i data-icon="import"></i></button>
+          </div>
+        </div>
+        <label class="search-box"><i data-icon="search"></i><input id="session-search" placeholder="Tìm theo tên, host, user, ghi chú…" spellcheck="false" aria-label="Tìm session"></label>
+        <div id="session-tree" class="tree"></div>
+      </section>
+
+      <section class="side-panel hidden" id="side-sftp">
+        <div class="panel-head">
+          <h2>SFTP</h2>
+          <div class="panel-actions">
+            <button class="icon-btn" id="sftp-follow" aria-pressed="false" title="Đi theo thư mục hiện tại của terminal" aria-label="Đi theo thư mục của terminal"><i data-icon="pin"></i></button>
+            <button class="icon-btn" id="sftp-hidden" aria-pressed="false" title="Hiện file ẩn" aria-label="Hiện file ẩn"><i data-icon="eye"></i></button>
+          </div>
+        </div>
+        <div class="sftp-toolbar">
+          <button class="icon-btn" data-sftp="up" title="Lên thư mục cha (Backspace)" aria-label="Lên thư mục cha"><i data-icon="arrow-up"></i></button>
+          <button class="icon-btn" data-sftp="home" title="Về thư mục home" aria-label="Về thư mục home"><i data-icon="home"></i></button>
+          <button class="icon-btn" data-sftp="refresh" title="Làm mới" aria-label="Làm mới"><i data-icon="refresh"></i></button>
+          <span class="tb-sep" aria-hidden="true"></span>
+          <button class="icon-btn" data-sftp="upload" title="Upload file" aria-label="Upload file"><i data-icon="upload"></i></button>
+          <button class="icon-btn" data-sftp="upload-dir" title="Upload cả thư mục" aria-label="Upload thư mục"><i data-icon="folder-up"></i></button>
+          <span class="tb-sep" aria-hidden="true"></span>
+          <button class="icon-btn" data-sftp="mkdir" title="Tạo thư mục" aria-label="Tạo thư mục"><i data-icon="folder-plus"></i></button>
+          <button class="icon-btn" data-sftp="touch" title="Tạo file mới" aria-label="Tạo file mới"><i data-icon="file-plus"></i></button>
+          <button class="icon-btn" data-sftp="cd" title="cd terminal tới thư mục này" aria-label="cd terminal tới đây"><i data-icon="terminal"></i></button>
+        </div>
+        <form id="sftp-path-form" class="path-bar">
+          <div class="crumbs" id="sftp-crumbs" title="Bấm để nhập đường dẫn"></div>
+          <input id="sftp-path" class="mono" spellcheck="false" aria-label="Đường dẫn" hidden>
+        </form>
+        <div id="sftp-list" class="sftp-list" tabindex="0"></div>
+        <div class="sftp-footer"><span id="sftp-selection"></span></div>
+        <div id="sftp-transfers" class="transfers"></div>
+        <input type="file" id="sftp-file-input" multiple hidden>
+        <input type="file" id="sftp-dir-input" webkitdirectory multiple hidden>
+      </section>
+
+      <section class="side-panel hidden" id="side-macros">
+        <div class="panel-head">
+          <h2>Macros</h2>
+          <div class="panel-actions">
+            <button class="icon-btn" id="macro-new" title="Macro mới từ danh sách lệnh" aria-label="Macro mới"><i data-icon="plus"></i></button>
+            <button class="icon-btn record-btn" id="macro-record" title="Ghi lại các phím gõ trong tab đang chọn" aria-label="Ghi macro"><i data-icon="record"></i></button>
+          </div>
+        </div>
+        <label class="search-box"><i data-icon="search"></i><input id="macro-search" placeholder="Tìm macro…" spellcheck="false" aria-label="Tìm macro"></label>
+        <div id="macro-list" class="tree"></div>
+        <p class="panel-hint">Double-click (hoặc <i data-icon="play"></i>) để chạy trên tab đang chọn. Khi bật MultiExec, macro chạy trên mọi tab đang tick.</p>
+      </section>
+    </aside>
+
+    <main class="workspace">
+      <div class="tabstrip">
+        <nav class="tabbar" id="tabbar" role="tablist" aria-label="Các tab terminal">
+          <button class="tab home active" id="tab-home" data-tab="home" role="tab" aria-controls="pane-home" aria-selected="true"><span class="tab-icon"><i data-icon="home"></i></span><span class="tab-name">Trang chủ</span></button>
+        </nav>
+        <button class="tab-add" id="tab-add" title="Mở thêm" aria-label="Mở thêm"><i data-icon="plus"></i></button>
+      </div>
+      <div class="panes" id="panes">
+        <section class="pane home-pane active" id="pane-home" role="tabpanel" aria-labelledby="tab-home">
+          <div class="home-dash">
+            <div class="hero">
+              <div class="hero-logo"><i data-icon="logo"></i></div>
+              <div>
+                <h1>WebTerm</h1>
+                <p>Terminal SSH, SFTP, tunnel và terminal local trong một cửa sổ. Lấy cảm hứng từ MobaXterm.</p>
+              </div>
+            </div>
+            <div class="notice" id="portable-note" hidden></div>
+            <div class="quick-actions">
+              <button class="qa" id="home-new"><span class="qa-icon"><i data-icon="server-plus"></i></span><span class="qa-text"><b>Session mới</b><small>SSH, RDP hoặc terminal local</small></span></button>
+              <button class="qa needs-local" id="home-local"><span class="qa-icon"><i data-icon="terminal"></i></span><span class="qa-text"><b>Terminal local</b><small>PowerShell, CMD, Git Bash</small></span></button>
+              <button class="qa" id="home-tunnel"><span class="qa-icon"><i data-icon="tunnel"></i></span><span class="qa-text"><b>SSH tunnel</b><small>Chuyển tiếp cổng -L, -R, SOCKS</small></span></button>
+              <button class="qa" id="home-import"><span class="qa-icon"><i data-icon="import"></i></span><span class="qa-text"><b>Import MobaXterm</b><small>Lấy session từ MobaXterm.ini</small></span></button>
+            </div>
+            <div class="home-grid">
+              <section class="card">
+                <header class="card-head"><h2>Mở gần đây</h2></header>
+                <div id="recent" class="recent"></div>
+              </section>
+              <section class="card">
+                <header class="card-head"><h2>Mẹo nhanh</h2></header>
+                <ul class="tips">
+                  <li><i data-icon="mouse"></i><span>Bôi đen để copy, <b>chuột phải</b> để dán (đổi được trong Cài đặt).</span></li>
+                  <li><i data-icon="pin"></i><span>Bật nút <b>ghim</b> ở panel SFTP để panel đi theo thư mục hiện tại của terminal.</span></li>
+                  <li><i data-icon="grid"></i><span><b>Chia</b> để xem 2–4 terminal; <b>MultiExec</b> để gõ lên nhiều server một lúc.</span></li>
+                  <li><i data-icon="zap"></i><span>Lưu lệnh hay dùng ở <b>Macros</b>, hoặc ghi lại thao tác gõ phím.</span></li>
+                  <li><i data-icon="upload"></i><span>Kéo thả file hoặc cả thư mục vào SFTP để upload.</span></li>
+                  <li><i data-icon="keyboard"></i><span>Phiên bị ngắt: bấm <kbd>R</kbd> trong terminal để kết nối lại.</span></li>
+                  <li><i data-icon="search"></i><span><kbd>Ctrl</kbd> + <kbd>K</kbd> để tìm session, chuyển tab và mở công cụ; tìm được cả khi gõ không dấu.</span></li>
+                  <li><i data-icon="restore"></i><span>Đóng nhầm tab? Bấm <b>+</b> → <b>Mở lại tab vừa đóng</b>, hoặc <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd> trong app desktop.</span></li>
+                </ul>
+              </section>
+            </div>
+          </div>
+        </section>
+      </div>
+      <footer class="statusbar" id="statusbar"><span class="muted">Chưa có kết nối</span></footer>
+    </main>
+  </div>
+
+  <!-- ===== Truy cập nhanh ===== -->
+  <dialog id="dlg-commands" class="dialog command-palette" aria-label="Truy cập nhanh">
+    <div class="command-search">
+      <i data-icon="search"></i>
+      <input id="command-input" role="combobox" aria-label="Tìm session, tab hoặc công cụ" aria-autocomplete="list" aria-expanded="true" aria-controls="command-results" placeholder="Tìm session, tab hoặc công cụ…" autocomplete="off" spellcheck="false">
+      <button class="icon-btn" id="command-close" title="Đóng (Esc)" aria-label="Đóng truy cập nhanh"><i data-icon="x"></i></button>
+    </div>
+    <div id="command-results" class="command-results" role="listbox" aria-label="Kết quả truy cập nhanh"></div>
+    <div class="command-footer"><span><kbd>↑</kbd> <kbd>↓</kbd> chọn <kbd>Enter</kbd> mở <kbd>Esc</kbd> đóng</span><span id="command-count" role="status" aria-live="polite"></span></div>
+  </dialog>
+
+  <!-- ===== Session ===== -->
+  <dialog id="dlg-session" class="dialog">
+    <form method="dialog" id="session-form" autocomplete="off">
+      <header class="dlg-head"><span class="dlg-icon"><i data-icon="server"></i></span><div><h3 id="session-form-title">Session mới</h3><p class="dlg-sub">Kết nối SSH, Remote Desktop hoặc terminal trên máy này</p></div></header>
+      <div class="dlg-body">
+        <div class="seg" role="radiogroup" aria-label="Kiểu session">
+          <label><input type="radio" name="type" value="ssh" checked><span><i data-icon="server"></i>SSH</span></label>
+          <label class="needs-local"><input type="radio" name="type" value="rdp"><span><i data-icon="monitor"></i>RDP (Windows)</span></label>
+          <label class="needs-local"><input type="radio" name="type" value="local"><span><i data-icon="terminal"></i>Terminal local</span></label>
+        </div>
+        <div class="grid2">
+          <label>Tên<input name="name" placeholder="VPS Singapore"></label>
+          <label>Thư mục<input name="folder" list="folder-list" placeholder="Khách hàng/Tháng 10"></label>
+          <label class="span2 t-remote">Host<input name="host" placeholder="1.2.3.4 hoặc vps.example.com" spellcheck="false"></label>
+          <label class="t-remote">Port<input name="port" type="number" min="1" max="65535"></label>
+          <label class="t-remote">Username<input name="username" placeholder="root" spellcheck="false"></label>
+          <label class="t-ssh">Xác thực
+            <select name="auth">
+              <option value="password">Mật khẩu</option>
+              <option value="key">Private key</option>
+            </select>
+          </label>
+          <label class="t-password">Mật khẩu<input name="password" type="password" autocomplete="new-password"></label>
+          <label class="span2 check t-clear-password"><input type="checkbox" name="clearPassword"> Xoá mật khẩu đã lưu</label>
+          <label class="span2 t-key">Đường dẫn private key<input name="privateKeyPath" placeholder="id_ed25519 (trong thư mục .ssh) hoặc đường dẫn đầy đủ" spellcheck="false"></label>
+          <label class="t-key">Passphrase<input name="passphrase" type="password" autocomplete="new-password"></label>
+          <label class="span2 t-ssh">Jump host (đi qua server trung gian)<select name="jumpSessionId"></select></label>
+          <label class="t-rdp">Đăng nhập
+            <select name="rdpAuth">
+              <option value="dpapi">Tự điền mật khẩu (file .rdp)</option>
+              <option value="credman">Lưu vào Windows Credential Manager</option>
+              <option value="prompt">Để Windows hỏi mật khẩu</option>
+            </select>
+          </label>
+          <label class="check t-rdp"><input type="checkbox" name="rdpFullscreen"> Toàn màn hình</label>
+          <label class="t-local">Shell<select name="shell"></select></label>
+          <label class="t-startdir">Thư mục bắt đầu<input name="startDir" placeholder="/var/www" spellcheck="false"></label>
+          <label class="color-field">Màu<input name="color" type="color" value="#3b82f6"></label>
+          <label class="span2 t-ssh">Lệnh chạy sau khi đăng nhập (mỗi dòng một lệnh)<textarea name="loginCommand" rows="2" class="mono" spellcheck="false" placeholder="cd /var/www && git status"></textarea></label>
+          <label class="span2">Ghi chú<textarea name="notes" rows="2" placeholder="Hết hạn 12/2026, khách: anh Nam…"></textarea></label>
+        </div>
+        <p class="hint"><i data-icon="shield-check"></i>Mật khẩu được mã hoá AES-256-GCM và chỉ lưu trên máy này.</p>
+      </div>
+      <datalist id="folder-list"></datalist>
+      <!-- Nút chính đặt đầu tiên trong DOM để Enter kích hoạt nó; CSS đảo thứ tự hiển thị. -->
+      <div class="dialog-actions">
+        <button class="btn primary" value="save">Lưu</button>
+        <button class="btn" value="save-connect" id="session-save-connect">Lưu &amp; mở</button>
+        <button class="btn ghost" value="cancel" formnovalidate>Huỷ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===== Hộp thoại chung ===== -->
+  <dialog id="dlg-prompt" class="dialog dialog-sm">
+    <form method="dialog" id="prompt-form" autocomplete="off">
+      <header class="dlg-head"><div><h3 id="prompt-title"></h3></div></header>
+      <div class="dlg-body">
+        <p id="prompt-message" class="muted pre"></p>
+        <div id="prompt-fields" class="fields"></div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn primary" value="ok" id="prompt-ok">OK</button>
+        <button class="btn ghost" value="cancel" formnovalidate>Huỷ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-choice" class="dialog dialog-sm">
+    <form method="dialog">
+      <header class="dlg-head"><div><h3 id="choice-title"></h3></div></header>
+      <div class="dlg-body"><p id="choice-message" class="muted pre"></p></div>
+      <div class="dialog-actions" id="choice-buttons"></div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-hostkey" class="dialog dialog-sm">
+    <form method="dialog">
+      <header class="dlg-head"><span class="dlg-icon"><i data-icon="shield"></i></span><div><h3 id="hostkey-title">Xác nhận host key</h3></div></header>
+      <div class="dlg-body" id="hostkey-body"></div>
+      <div class="dialog-actions">
+        <button class="btn primary" value="accept" id="hostkey-accept">Tin tưởng &amp; lưu</button>
+        <button class="btn ghost" value="reject">Huỷ kết nối</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-editor" class="dialog editor-dialog">
+    <form method="dialog" id="editor-form">
+      <header class="dlg-head"><span class="dlg-icon"><i data-icon="file-text"></i></span><div class="editor-titles"><h3 id="editor-title" class="mono"></h3><p class="dlg-sub" id="editor-state"></p></div></header>
+      <textarea id="editor-text" class="editor mono" spellcheck="false" wrap="off"></textarea>
+      <div class="dialog-actions">
+        <button class="btn primary" value="save" id="editor-save">Lưu</button>
+        <button class="btn ghost" value="close">Đóng</button>
+        <span class="muted small"><kbd>Ctrl</kbd>+<kbd>S</kbd> để lưu · <kbd>Tab</kbd> chèn ký tự tab</span>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-import" class="dialog">
+    <form method="dialog" id="import-form">
+      <header class="dlg-head"><span class="dlg-icon"><i data-icon="import"></i></span><div><h3>Import session từ MobaXterm</h3><p id="import-source" class="dlg-sub"></p></div></header>
+      <div class="dlg-body">
+        <div id="import-list" class="import-list"></div>
+        <details>
+          <summary>Hoặc dán nội dung file MobaXterm.ini</summary>
+          <textarea id="import-text" class="mono" rows="6" placeholder="[Bookmarks]&#10;SubRep=&#10;Ten=#109#0%1.2.3.4%22%root%..."></textarea>
+          <button class="btn" type="button" id="import-parse">Đọc nội dung đã dán</button>
+        </details>
+        <p class="hint"><i data-icon="info"></i>Mật khẩu không được import vì MobaXterm mã hoá bằng master password. Lần đầu kết nối, WebTerm sẽ hỏi và có thể lưu lại.</p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn primary" value="import" id="import-ok">Import</button>
+        <button class="btn ghost" value="cancel">Huỷ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===== Cài đặt ===== -->
+  <dialog id="dlg-settings" class="dialog settings-dialog">
+    <form method="dialog" id="settings-form" autocomplete="off">
+      <header class="dlg-head"><span class="dlg-icon"><i data-icon="settings"></i></span><div><h3>Cài đặt</h3></div></header>
+      <div class="settings-tabs" role="tablist">
+        <button type="button" data-stab="terminal" class="active"><i data-icon="sun"></i>Giao diện</button>
+        <button type="button" data-stab="security"><i data-icon="shield"></i>Bảo mật</button>
+        <button type="button" data-stab="tools"><i data-icon="tools"></i>Công cụ</button>
+      </div>
+      <div class="dlg-body">
+        <section data-spanel="terminal" class="grid2">
+          <div class="span2 field">
+            <span class="field-label">Giao diện ứng dụng</span>
+            <div class="seg seg-sm" role="radiogroup" aria-label="Giao diện ứng dụng">
+              <label><input type="radio" name="uiTheme" value="system"><span><i data-icon="monitor"></i>Theo Windows</span></label>
+              <label><input type="radio" name="uiTheme" value="dark"><span><i data-icon="moon"></i>Tối</span></label>
+              <label><input type="radio" name="uiTheme" value="light"><span><i data-icon="sun"></i>Sáng</span></label>
+            </div>
+          </div>
+          <label class="span2">Bảng màu terminal<select name="theme"></select></label>
+          <div class="span2 theme-preview mono" id="theme-preview"></div>
+          <label class="span2">Font<input name="fontFamily" spellcheck="false"></label>
+          <label>Cỡ chữ<input name="fontSize" type="number" min="9" max="28"></label>
+          <label>Kiểu con trỏ
+            <select name="cursorStyle">
+              <option value="block">Khối</option>
+              <option value="bar">Thanh dọc</option>
+              <option value="underline">Gạch chân</option>
+            </select>
+          </label>
+          <label>Số dòng lưu lại<input name="scrollback" type="number" min="500" max="100000" step="500"></label>
+          <label class="check"><input type="checkbox" name="cursorBlink"> Con trỏ nhấp nháy</label>
+          <label class="check span2"><input type="checkbox" name="copyOnSelect"> Bôi đen là copy</label>
+          <label class="check span2"><input type="checkbox" name="rightClickPaste"> Chuột phải để dán (bỏ chọn để hiện menu Copy/Dán)</label>
+          <label class="check span2"><input type="checkbox" name="highlight"> Tô màu từ khoá: error/failed (đỏ), warning (vàng), success/OK (xanh), địa chỉ IP</label>
+        </section>
+        <section data-spanel="security" hidden>
+          <div id="vault-settings"></div>
+        </section>
+        <section data-spanel="tools" class="grid2" hidden>
+          <label class="span2">Editor ngoài để sửa file trên server<select name="externalEditor" id="editor-select"></select></label>
+          <label class="span2">Hoặc đường dẫn file .exe khác<input name="externalEditorPath" placeholder="C:\Program Files\Notepad++\notepad++.exe" spellcheck="false"></label>
+          <p class="span2 hint"><i data-icon="external"></i>Chuột phải một file trong panel SFTP → "Sửa bằng app ngoài". Mỗi lần bạn lưu trong editor, WebTerm tự upload lại lên server.</p>
+        </section>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn primary" value="save">Lưu</button>
+        <button class="btn ghost" value="cancel" formnovalidate>Huỷ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===== Macro ===== -->
+  <dialog id="dlg-macro" class="dialog">
+    <form method="dialog" id="macro-form" autocomplete="off">
+      <header class="dlg-head"><span class="dlg-icon"><i data-icon="zap"></i></span><div><h3 id="macro-form-title">Macro mới</h3><p class="dlg-sub">Chạy trên tab đang chọn hoặc mọi tab MultiExec</p></div></header>
+      <div class="dlg-body fields">
+        <div class="grid2">
+          <label>Tên<input name="name" placeholder="Cập nhật hệ thống"></label>
+          <label>Nhóm<input name="folder" list="macro-folder-list" placeholder="Ubuntu"></label>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="Loại macro">
+          <label><input type="radio" name="kind" value="text" checked><span><i data-icon="file-text"></i>Danh sách lệnh</span></label>
+          <label><input type="radio" name="kind" value="keys"><span><i data-icon="keyboard"></i>Phím đã ghi</span></label>
+        </div>
+        <label class="k-text">Lệnh (mỗi dòng một lệnh)<textarea name="text" rows="6" class="mono" spellcheck="false" placeholder="apt update&#10;apt -y upgrade"></textarea></label>
+        <div class="grid2 k-text">
+          <label class="check"><input type="checkbox" name="enter" checked> Gửi Enter sau mỗi dòng</label>
+          <label>Chờ giữa các dòng (ms)<input name="delay" type="number" min="0" max="10000" step="50" value="150"></label>
+        </div>
+        <label class="k-keys">Các phím đã ghi. Ký hiệu: \r Enter, \t Tab, \e Esc, \x03 Ctrl+C, \\ dấu \<textarea name="keys" rows="6" class="mono" spellcheck="false"></textarea></label>
+      </div>
+      <datalist id="macro-folder-list"></datalist>
+      <div class="dialog-actions">
+        <button class="btn primary" value="save">Lưu</button>
+        <button class="btn ghost" value="cancel" formnovalidate>Huỷ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===== Tunnel ===== -->
+  <dialog id="dlg-tunnels" class="dialog tunnels-dialog">
+    <header class="dlg-head">
+      <span class="dlg-icon"><i data-icon="tunnel"></i></span>
+      <div><h3>SSH Tunnel</h3><p class="dlg-sub">Local (-L): mở cổng trên máy này để vào dịch vụ trên server (vd. MySQL 3306). Remote (-R): mở cổng trên server để vào dịch vụ trên máy này. Dynamic (-D): proxy SOCKS5 đi qua server.</p></div>
+      <button class="btn primary dlg-head-action" id="tunnel-new" type="button"><i data-icon="plus"></i>Tunnel mới</button>
+    </header>
+    <div class="dlg-body">
+      <div class="table-wrap">
+        <table class="tunnel-table">
+          <thead><tr><th>Tên</th><th>Kiểu</th><th>Cổng nghe</th><th>Qua server</th><th>Đích</th><th>Trạng thái</th><th></th></tr></thead>
+          <tbody id="tunnel-rows"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn ghost" id="tunnels-close" type="button">Đóng</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-tunnel" class="dialog">
+    <form method="dialog" id="tunnel-form" autocomplete="off">
+      <header class="dlg-head"><span class="dlg-icon"><i data-icon="tunnel"></i></span><div><h3 id="tunnel-form-title">Tunnel mới</h3></div></header>
+      <div class="dlg-body">
+        <div class="grid2">
+          <label class="span2">Tên<input name="name" placeholder="MySQL VPS Sing"></label>
+          <label class="span2">Kiểu
+            <select name="type">
+              <option value="L">Local (-L): cổng trên máy này → máy đích qua server</option>
+              <option value="R">Remote (-R): cổng trên server → máy đích phía máy này</option>
+              <option value="D">Dynamic (-D): proxy SOCKS5 qua server</option>
+            </select>
+          </label>
+          <label class="span2">Server SSH<select name="sessionId"></select></label>
+          <label>Địa chỉ nghe<input name="bindHost" value="127.0.0.1" spellcheck="false"></label>
+          <label>Cổng nghe<input name="bindPort" type="number" min="1" max="65535" placeholder="13306"></label>
+          <label class="t-dest">Máy đích<input name="destHost" value="127.0.0.1" spellcheck="false"></label>
+          <label class="t-dest">Cổng đích<input name="destPort" type="number" min="1" max="65535" placeholder="3306"></label>
+          <label class="check span2"><input type="checkbox" name="autoStart"> Tự chạy khi mở WebTerm</label>
+        </div>
+        <p class="hint"><i data-icon="info"></i><span class="pre" id="tunnel-help"></span></p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn primary" value="save">Lưu</button>
+        <button class="btn ghost" value="cancel" formnovalidate>Huỷ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===== Tạo SSH key ===== -->
+  <dialog id="dlg-keygen" class="dialog">
+    <form method="dialog" id="keygen-form" autocomplete="off">
+      <header class="dlg-head"><span class="dlg-icon"><i data-icon="key"></i></span><div><h3>Tạo SSH key</h3><p class="dlg-sub">Giống MobaKeyGen: tạo key, chép lên server, dùng cho session</p></div></header>
+      <div class="dlg-body">
+        <div class="grid2" id="keygen-inputs">
+          <label>Loại key
+            <select name="type">
+              <option value="ed25519">Ed25519 (khuyên dùng)</option>
+              <option value="rsa">RSA 4096</option>
+            </select>
+          </label>
+          <label>Tên file<input name="name" value="id_webterm" spellcheck="false"></label>
+          <label class="span2">Ghi chú (comment)<input name="comment" spellcheck="false"></label>
+          <label>Passphrase (tuỳ chọn)<input name="passphrase" type="password" autocomplete="new-password"></label>
+          <label>Nhập lại passphrase<input name="passphrase2" type="password" autocomplete="new-password"></label>
+        </div>
+        <div id="keygen-result" hidden>
+          <label>Public key<textarea id="keygen-public" readonly rows="3" class="mono"></textarea></label>
+          <p class="small mono" id="keygen-fingerprint"></p>
+          <p class="small muted pre" id="keygen-saved"></p>
+          <div class="keygen-actions">
+            <button type="button" class="btn" id="keygen-copy"><i data-icon="copy"></i>Copy public key</button>
+            <button type="button" class="btn" id="keygen-install"><i data-icon="upload"></i>Chép lên server…</button>
+            <button type="button" class="btn" id="keygen-use"><i data-icon="server"></i>Dùng cho session…</button>
+            <button type="button" class="btn" id="keygen-download"><i data-icon="download"></i>Tải private key</button>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn primary" value="generate" id="keygen-generate">Tạo key</button>
+        <button class="btn ghost" value="close" formnovalidate>Đóng</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===== Master password ===== -->
+  <dialog id="dlg-unlock" class="dialog dialog-sm">
+    <form method="dialog" id="unlock-form" autocomplete="off">
+      <header class="dlg-head"><span class="dlg-icon"><i data-icon="lock"></i></span><div><h3>Nhập master password</h3><p class="dlg-sub">Mật khẩu đã lưu đang được khoá</p></div></header>
+      <div class="dlg-body">
+        <p class="muted">Nhập master password để kết nối bằng mật khẩu đã lưu và chạy các tunnel tự động.</p>
+        <label>Master password<input name="password" type="password" autocomplete="current-password"></label>
+        <p class="alert" id="unlock-error" hidden></p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn primary" value="unlock">Mở khoá</button>
+        <button class="btn ghost" value="skip" formnovalidate>Bỏ qua</button>
+      </div>
+    </form>
+  </dialog>
+
+  <input type="file" id="backup-file-input" accept=".json,application/json" hidden>
+  <div id="ctxmenu" class="ctxmenu" role="menu" aria-label="Thao tác" hidden></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="/vendor/xterm.js"></script>
+  <script src="/vendor/addon-fit.js"></script>
+  <script src="/vendor/addon-web-links.js"></script>
+  <script src="/vendor/addon-search.js"></script>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

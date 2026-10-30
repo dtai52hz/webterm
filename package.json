@@ -1,0 +1,97 @@
+{
+  "name": "webterm",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Terminal SSH + SFTP + quản lý session, lấy cảm hứng từ MobaXterm",
+  "author": "WebTerm",
+  "main": "electron/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js --open",
+    "serve": "node server.js",
+    "app": "electron .",
+    "icon": "node build/make-icon.js",
+    "dist": "electron-builder --win",
+    "test": "node test/run-all.js",
+    "test:app": "node test/app-smoke.js",
+    "fake-sshd": "node test/fake-sshd.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@xterm/addon-fit": "0.10.0",
+    "@xterm/addon-search": "0.15.0",
+    "@xterm/addon-web-links": "0.11.0",
+    "@xterm/xterm": "5.5.0",
+    "node-pty": "1.1.0",
+    "ssh2": "1.17.0",
+    "ws": "8.22.0"
+  },
+  "devDependencies": {
+    "electron": "44.9.3",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "local.webterm.app",
+    "productName": "WebTerm",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "server.js",
+      "lib/**/*",
+      "public/**/*",
+      "electron/**/*",
+      "package.json",
+      "!node_modules/cpu-features/**",
+      "!node_modules/ssh2/lib/protocol/crypto/build/**",
+      "!**/*.pdb",
+      "!node_modules/node-pty/src/**",
+      "!node_modules/node-pty/deps/**",
+      "!node_modules/node-pty/third_party/**",
+      "!node_modules/node-pty/prebuilds/darwin-*/**",
+      "!node_modules/node-pty/prebuilds/linux-*/**",
+      "!node_modules/node-pty/prebuilds/win32-arm64/**"
+    ],
+    "asarUnpack": [
+      "node_modules/node-pty/**"
+    ],
+    "npmRebuild": false,
+    "electronLanguages": [
+      "en-US",
+      "vi"
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WebTerm",
+      "artifactName": "WebTerm-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "WebTerm-Portable-${version}.exe"
+    }
+  }
+}
