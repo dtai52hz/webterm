@@ -4,6 +4,12 @@ Terminal SSH lấy cảm hứng từ MobaXterm. Có quản lý session, terminal
 
 Dùng được theo 2 cách: **app desktop Windows** (`.exe`) hoặc **web** chạy bằng `npm start`.
 
+## Sửa lỗi 1.2.1
+
+- **RDP vừa cửa sổ hơn**: bật co giãn nội dung và cập nhật độ phân giải khi thay đổi kích thước cửa sổ Remote Desktop. Áp dụng cả session RDP đã lưu; tuỳ chọn toàn màn hình vẫn được giữ. Kích thước ban đầu do Windows chọn theo màn hình hiện tại.
+
+Thiết lập dùng `smart sizing` và `dynamic resolution` theo [tài liệu Microsoft](https://learn.microsoft.com/en-us/azure/virtual-desktop/rdp-properties#display-settings). Khả năng cập nhật độ phân giải phụ thuộc máy RDP; co giãn nội dung giúp giữ desktop nằm trong cửa sổ.
+
 ## Nâng cấp 1.2.0
 
 - **Mở lại tab vừa đóng**: nút **+** → **Mở lại tab vừa đóng**, menu **Công cụ**, hoặc **Ctrl+Shift+T** trong app desktop. Bảng **Ctrl+K** cũng liệt kê tối đa 10 tab vừa đóng. Mở lại tạo kết nối mới và giữ tên tab, dùng cấu hình session hiện tại. Lịch sử chỉ nằm trong bộ nhớ, không chứa mật khẩu, OTP hay nội dung terminal, và mất khi tắt app.
@@ -33,8 +39,8 @@ File cài đặt nằm trong thư mục `dist/` sau khi build:
 
 | File | Dùng khi |
 | --- | --- |
-| `WebTerm-Setup-1.2.0.exe` | Cài vào máy, có shortcut ở Desktop và Start Menu, gỡ được trong Settings → Apps |
-| `WebTerm-Portable-1.2.0.exe` | Chạy luôn không cần cài. Chép vào USB là mang theo được cả session (xem [Chạy từ USB](#chạy-từ-usb)) |
+| `WebTerm-Setup-1.2.1.exe` | Cài vào máy, có shortcut ở Desktop và Start Menu, gỡ được trong Settings → Apps |
+| `WebTerm-Portable-1.2.1.exe` | Chạy luôn không cần cài. Chép vào USB là mang theo được cả session (xem [Chạy từ USB](#chạy-từ-usb)) |
 
 File chưa được ký số, nên lần đầu mở Windows SmartScreen có thể báo "Windows protected your PC". Bấm **More info → Run anyway**.
 
@@ -51,7 +57,7 @@ Bản Portable lưu mọi thứ vào thư mục `WebTerm-data` nằm ngay cạnh
 
 ```
 E:\
-├─ WebTerm-Portable-1.2.0.exe
+├─ WebTerm-Portable-1.2.1.exe
 └─ WebTerm-data\
    ├─ data\      session, mật khẩu đã lưu (mã hoá), macro, tunnel, cài đặt, known hosts
    ├─ keys\      SSH key tạo bằng Công cụ → Tạo SSH key
@@ -204,7 +210,7 @@ Chạy unit test và 6 nhóm test end-to-end với SSH server giả (`test/fake-
 
 Chỉ chạy một nhóm: `npm test -- sftp`.
 
-Kiểm tra app desktop: `npm run test:app` (bản dev) hoặc `node test/app-smoke.js dist\win-unpacked\WebTerm.exe` (bản đóng gói). Lệnh này kiểm terminal local, SSH, Ctrl+K, menu/tab bằng bàn phím, mở lại tab và editor đang lưu bên trong Electron. Thêm `--portable` để thử chạy từ USB, vd. `node test/app-smoke.js dist\WebTerm-Portable-1.2.0.exe --portable`: file được chép sang một thư mục tạm đóng vai USB, rồi kiểm dữ liệu có nằm trong `WebTerm-data` cạnh nó không.
+Kiểm tra app desktop: `npm run test:app` (bản dev) hoặc `node test/app-smoke.js dist\win-unpacked\WebTerm.exe` (bản đóng gói). Lệnh này kiểm terminal local, SSH, Ctrl+K, menu/tab bằng bàn phím, mở lại tab và editor đang lưu bên trong Electron. Thêm `--portable` để thử chạy từ USB, vd. `node test/app-smoke.js dist\WebTerm-Portable-1.2.1.exe --portable`: file được chép sang một thư mục tạm đóng vai USB, rồi kiểm dữ liệu có nằm trong `WebTerm-data` cạnh nó không.
 
 Muốn tự thử giao diện mà không cần VPS thật: chạy `npm run fake-sshd` rồi tạo session `127.0.0.1`, port `2222`, user `test`, mật khẩu `secret`.
 
